@@ -116,7 +116,7 @@ def customer_info_rows() -> list[tuple[str, object]]:
         ("接机员/经办人", st.session_state.get("receiver_name", "")),
         ("重要数据备份", st.session_state.get("data_backup_status", "")),
         ("旧件处理", st.session_state.get("old_part_policy", "")),
-        ("保修天数", f"{st.session_state.get('warranty_days', 30)} 天"),
+        ("保修天数", f"{st.session_state.get('warranty_days', 90)} 天"),
         ("账号/密码授权", st.session_state.get("password_authorization", "")),
         ("其他备注", st.session_state.get("repair_notes", "")),
     ]
