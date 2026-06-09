@@ -19,6 +19,20 @@ from notice_content import (
 from pdf_exporter import export_notice_pdf
 
 
+DEVICE_STATE_OPTIONS: tuple[str, ...] = (
+    "无异常",
+    "划痕",
+    "凹陷",
+    "掉漆",
+    "裂纹",
+    "缺螺丝",
+    "松动",
+    "变形",
+    "无法检查",
+    "未随机器",
+)
+
+
 def now_text() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -53,6 +67,8 @@ def reset_all() -> None:
             or key.startswith("signature_")
             or key.startswith("pdf_")
             or key.startswith("state_desc_")
+            or key.startswith("state_options_")
+            or key.startswith("state_remark_")
             or key.startswith("state_confirmed_")
             or key
             in {
@@ -116,7 +132,7 @@ def customer_info_rows() -> list[tuple[str, object]]:
         ("接机员/经办人", st.session_state.get("receiver_name", "")),
         ("重要数据备份", st.session_state.get("data_backup_status", "")),
         ("旧件处理", st.session_state.get("old_part_policy", "")),
-        ("保修天数", f"{st.session_state.get('warranty_days', 90)} 天"),
+        ("保修天数", f"{st.session_state.get('warranty_days', 30)} 天"),
         ("账号/密码授权", st.session_state.get("password_authorization", "")),
         ("其他备注", st.session_state.get("repair_notes", "")),
     ]
@@ -125,10 +141,18 @@ def customer_info_rows() -> list[tuple[str, object]]:
 def device_records() -> list[dict[str, object]]:
     records = []
     for index, part in enumerate(DEVICE_STATE_PARTS):
+        selected_states = st.session_state.get(f"state_options_{index}", [])
+        remark = st.session_state.get(f"state_remark_{index}", "").strip()
+        description_parts = []
+        if selected_states:
+            description_parts.append("、".join(selected_states))
+        if remark:
+            description_parts.append(f"备注：{remark}")
+
         records.append(
             {
                 "part": part,
-                "description": st.session_state.get(f"state_desc_{index}", ""),
+                "description": "；".join(description_parts),
                 "confirmed": st.session_state.get(f"state_confirmed_{index}", False),
             }
         )
@@ -219,9 +243,20 @@ st.text_area("其他备注", key="repair_notes", placeholder="可填写配件来
 with st.expander("设备接机状态记录", expanded=False):
     st.caption("建议接机时与客户共同核对外观和附件状态，取机或争议处理时更清楚。")
     for index, part in enumerate(DEVICE_STATE_PARTS):
-        desc_col, ok_col = st.columns([5, 1])
-        with desc_col:
-            st.text_input(f"{part} 现状描述", key=f"state_desc_{index}", placeholder="划痕/凹陷/掉漆/缺螺丝/无异常等")
+        state_col, remark_col, ok_col = st.columns([4, 3, 1])
+        with state_col:
+            st.pills(
+                f"{part} 状态",
+                options=DEVICE_STATE_OPTIONS,
+                selection_mode="multi",
+                key=f"state_options_{index}",
+            )
+        with remark_col:
+            st.text_input(
+                f"{part} 备注",
+                key=f"state_remark_{index}",
+                placeholder="补充位置、数量、程度等",
+            )
         with ok_col:
             st.checkbox("客户确认", key=f"state_confirmed_{index}")
 
